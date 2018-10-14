@@ -25,7 +25,7 @@ def get_dataset_from_file(path):
             data_set.append(scaled_list)
             tags.append(int(tag))
             input = dataset_file.readline()
-        #data_set = np.asmatrix(data_set)
+        data_set = np.asarray(data_set)
         tagged_set = [tags, data_set]
     return tagged_set
 
@@ -45,23 +45,25 @@ def generate_weight_matrix(height, width):
         matrix.append([])
         for col in range(0, width):
             matrix[row].append(random.uniform(-.05, .05))
-    return np.asmatrix(matrix)
+    return np.asarray(matrix)
 
 def guess_from_vector(vector):
     guess = 0
-    largest_value = float(-inf)
-    for index, val in enumerate(np.nditer(vector)):
+    largest_value = float('-inf')
+    for index, val in enumerate(vector):
         if val > largest_value:
             guess = index
-            largest_value = Val
+            largest_value = val
     return guess
 
 # compute the accuracy of the given perceptrons at predicting the given inputs
 def compute_accuracy(dataset, hidden_layer_weights, output_layer_weights):
     count = len(dataset[0])
     correct = 0
-    asdf = dataset[1] * hidden_layer_weights * output_layer_weights
-
+    results = dataset[1] @ hidden_layer_weights @ output_layer_weights
+    for tag, result in zip(dataset[0], results):
+        if tag == guess_from_vector(result):
+            correct += 1
     return correct / count
 
 def main(argv=None):
@@ -70,7 +72,7 @@ def main(argv=None):
     training_data_path = argv.pop()
     test_data_path = argv.pop()
     training_data = get_dataset_from_file(training_data_path)
-    ######################test_data = get_dataset_from_file(test_data_path)
+    test_data = get_dataset_from_file(test_data_path)
     print('Finished Importing data')
     
     # initialize
@@ -80,36 +82,43 @@ def main(argv=None):
 
 
     # targets for each node indexed by target digit
-    targets = (np.ones((10,10)) * .1) + (np.identity(OUTPUT_COUNT) * .8)
+    targets = (np.ones((10,10)) * .01) + (np.identity(OUTPUT_COUNT) * .89)
+
+    # initial accuracy
+    print(compute_accuracy(training_data, np.array(hidden_layer_weights), np.array(output_weights)))
+    print(compute_accuracy(test_data, np.array(hidden_layer_weights), np.array(output_weights)))
 
     # begin training
     previous_OWD = 0
     previous_HWD = 0
-    for epoch in range(0,50):
+    for epoch in range(1,51):
         for i, (tag, input) in enumerate(zip(training_data[0], training_data[1])):
-            input = np.matrix(input)
+            input = np.array(input)
             # activation of hidden nodes
-            hidden_nodes = input * hidden_layer_weights
+            hidden_nodes = input @ hidden_layer_weights
             hidden_nodes = sigmoid(hidden_nodes)
             # activation of output nodes 
-            outputs = hidden_nodes * output_weights
+            outputs = hidden_nodes @ output_weights
             outputs = sigmoid(outputs)
             # determine errors for the nodes
             target = targets[tag,:]
-            output_errors = np.multiply(np.multiply(outputs, (1 - outputs)), np.subtract(target, outputs))
-            asdf = (output_weights * output_errors.T)
-            hidden_errors = np.multiply(np.multiply(hidden_nodes, (1 - hidden_nodes)), np.sum(asdf, axis=0))
+            output_errors = outputs * (1 - outputs) * (target - outputs)
+            asdf = (output_weights @ output_errors.T)
+            hidden_errors = hidden_nodes * (1 - hidden_nodes) * np.sum(asdf, axis=0)
             # update weights for outputs
-            scaled_output_errors = (LEARNING_RATE * output_errors).T
-            output_weight_deltas = (scaled_output_errors * hidden_nodes).T
-            output_weight_deltas =  output_weight_deltas + (MOMENTUM * previous_OWD)
+            scaled_output_errors = LEARNING_RATE * output_errors
+            output_weight_deltas = np.outer(scaled_output_errors, hidden_nodes).T
+            output_weight_deltas = output_weight_deltas + (MOMENTUM * previous_OWD)
             previous_OWD = output_weight_deltas
             output_weights = output_weights + output_weight_deltas
-
-            hidden_weight_deltas = ((LEARNING_RATE * hidden_errors).T * input).T + (MOMENTUM * previous_HWD)
+            # update weights for hidden nodes
+            scaled_hidden_errors = (LEARNING_RATE * hidden_errors)
+            hidden_weight_deltas = np.outer(scaled_hidden_errors, input).T
+            hidden_weight_deltas = hidden_weight_deltas + (MOMENTUM * previous_HWD)
             previous_HWD = hidden_weight_deltas
             hidden_layer_weights = hidden_layer_weights + hidden_weight_deltas
-        compute_accuracy(training_data, np.matrix(hidden_layer_weights), np.matrix(output_weights))
+        print(compute_accuracy(training_data, np.array(hidden_layer_weights), np.array(output_weights)))
+        print(compute_accuracy(test_data, np.array(hidden_layer_weights), np.array(output_weights)))
         print('Epoch ' + str(epoch))
             
 
