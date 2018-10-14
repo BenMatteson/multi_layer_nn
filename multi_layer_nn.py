@@ -103,8 +103,7 @@ def main(argv=None):
             # determine errors for the nodes
             target = targets[tag,:]
             output_errors = outputs * (1 - outputs) * (target - outputs)
-            asdf = (output_weights @ output_errors.T)
-            hidden_errors = hidden_nodes * (1 - hidden_nodes) * np.sum(asdf, axis=0)
+            hidden_errors = hidden_nodes * (1 - hidden_nodes) * np.sum((output_weights @ output_errors.T), axis=0)
             # update weights for outputs
             scaled_output_errors = LEARNING_RATE * output_errors
             output_weight_deltas = np.outer(scaled_output_errors, hidden_nodes).T
