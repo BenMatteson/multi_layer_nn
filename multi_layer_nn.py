@@ -2,13 +2,14 @@ import sys
 import numpy as np
 import random
 import math
+from scipy.special import expit #sigmoid activation function
 
-HIDDEN_LAYER_SIZE = 20
+HIDDEN_LAYER_SIZE = 100
 OUTPUT_COUNT = 10
 LEARNING_RATE = .01
 MOMENTUM = .9
 
-sigmoid = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
+#sigmoid = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 
 def get_dataset_from_file(path):
     with open(path) as dataset_file:
@@ -61,10 +62,10 @@ def compute_accuracy(dataset, hidden_layer_weights, output_layer_weights):
     count = len(dataset[0])
     correct = 0
     hidden_layer = dataset[1] @ hidden_layer_weights
-    #sigmoid(hidden_layer) # slower, but more correct, does not effect predictions since it preserves reletive order
+    #hidden_layer = expit(hidden_layer) # slower, but more correct, does not effect predictions since it preserves reletive order
 
     output = hidden_layer @ output_layer_weights
-    #sigmoid(output) # slower, but more correct, does not effect predictions since it preserves reletive order
+    #output = expit(output) # slower, but more correct, does not effect predictions since it preserves reletive order
 
     results = dataset[1] @ hidden_layer_weights @ output_layer_weights
     for tag, result in zip(dataset[0], results):
@@ -102,10 +103,10 @@ def main(argv=None):
             input = np.array(input)
             # activation of hidden nodes
             hidden_nodes = input @ hidden_layer_weights
-            hidden_nodes = sigmoid(hidden_nodes)
+            hidden_nodes = expit(hidden_nodes)
             # activation of output nodes 
             outputs = hidden_nodes @ output_weights
-            outputs = sigmoid(outputs)
+            outputs = expit(outputs)
             # determine errors
             target = targets[tag,:]
             output_errors = outputs * (1 - outputs) * (target - outputs)
