@@ -60,6 +60,12 @@ def guess_from_vector(vector):
 def compute_accuracy(dataset, hidden_layer_weights, output_layer_weights):
     count = len(dataset[0])
     correct = 0
+    hidden_layer = dataset[1] @ hidden_layer_weights
+    #sigmoid(hidden_layer) # slower, but more correct, does not effect predictions since it preserves reletive order
+
+    output = hidden_layer @ output_layer_weights
+    #sigmoid(output) # slower, but more correct, does not effect predictions since it preserves reletive order
+
     results = dataset[1] @ hidden_layer_weights @ output_layer_weights
     for tag, result in zip(dataset[0], results):
         if tag == guess_from_vector(result):
@@ -82,7 +88,7 @@ def main(argv=None):
 
 
     # targets for each node indexed by target digit
-    targets = (np.ones((10,10)) * .01) + (np.identity(OUTPUT_COUNT) * .89)
+    targets = (np.ones((10,10)) * .1) + (np.identity(OUTPUT_COUNT) * .8)
 
     # initial accuracy
     print(compute_accuracy(training_data, np.array(hidden_layer_weights), np.array(output_weights)))
@@ -100,34 +106,25 @@ def main(argv=None):
             # activation of output nodes 
             outputs = hidden_nodes @ output_weights
             outputs = sigmoid(outputs)
-            # determine errors for the nodes
+            # determine errors
             target = targets[tag,:]
             output_errors = outputs * (1 - outputs) * (target - outputs)
             hidden_errors = hidden_nodes * (1 - hidden_nodes) * np.sum((output_weights @ output_errors.T), axis=0)
             # update weights for outputs
-            scaled_output_errors = LEARNING_RATE * output_errors
-            output_weight_deltas = np.outer(scaled_output_errors, hidden_nodes).T
+            output_weight_deltas = np.outer(LEARNING_RATE * output_errors, hidden_nodes).T
             output_weight_deltas = output_weight_deltas + (MOMENTUM * previous_OWD)
-            previous_OWD = output_weight_deltas
             output_weights = output_weights + output_weight_deltas
+            previous_OWD = output_weight_deltas
             # update weights for hidden nodes
-            scaled_hidden_errors = (LEARNING_RATE * hidden_errors)
-            hidden_weight_deltas = np.outer(scaled_hidden_errors, input).T
+            hidden_weight_deltas = np.outer((LEARNING_RATE * hidden_errors), input).T
             hidden_weight_deltas = hidden_weight_deltas + (MOMENTUM * previous_HWD)
-            previous_HWD = hidden_weight_deltas
             hidden_layer_weights = hidden_layer_weights + hidden_weight_deltas
+            previous_HWD = hidden_weight_deltas
+
         print(compute_accuracy(training_data, np.array(hidden_layer_weights), np.array(output_weights)))
         print(compute_accuracy(test_data, np.array(hidden_layer_weights), np.array(output_weights)))
         print('Epoch ' + str(epoch))
-            
-
-
-    #hidden_layer = training_data[1] * hidden_layer_weights
-    #sigmoid(hidden_layer)
-
-    #output = hidden_layer * output_weights
-    #sigmoid(output)
-
+    
     print('Done')
 
 if __name__ == "__main__":
