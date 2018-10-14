@@ -4,7 +4,7 @@ import random
 import math
 from scipy.special import expit #sigmoid activation function
 
-HIDDEN_LAYER_SIZE = 100
+HIDDEN_LAYER_SIZE = 20
 OUTPUT_COUNT = 10
 LEARNING_RATE = .01
 MOMENTUM = .9
@@ -50,7 +50,6 @@ def generate_weight_matrix(height, width):
     return np.asarray(matrix)
 
 def guess_from_vector(vector):
-    guess = 0
     largest_value = float('-inf')
     for index, val in enumerate(vector):
         if val > largest_value:
@@ -62,14 +61,14 @@ def guess_from_vector(vector):
 def compute_accuracy(dataset, hidden_layer_weights, output_layer_weights):
     count = len(dataset[0])
     correct = 0
-    hidden_layer = dataset[1] @ hidden_layer_weights
+    hidden_layer = np.c_[np.ones(count) , dataset[1] @ hidden_layer_weights]
     #hidden_layer = expit(hidden_layer) # slower, but more correct, does not effect predictions since it preserves reletive order
 
     output = hidden_layer @ output_layer_weights
     #output = expit(output) # slower, but more correct, does not effect predictions since it preserves reletive order
 
-    results = dataset[1] @ hidden_layer_weights @ output_layer_weights
-    for tag, result in zip(dataset[0], results):
+    #results = dataset[1] @ hidden_layer_weights @ output_layer_weights
+    for tag, result in zip(dataset[0], output):
         if tag == guess_from_vector(result):
             correct += 1
     return correct / count
@@ -86,7 +85,7 @@ def main(argv=None):
     # initialize
     input_size = len(training_data[1][0])
     hidden_layer_weights = generate_weight_matrix(input_size, HIDDEN_LAYER_SIZE)
-    output_weights = generate_weight_matrix(HIDDEN_LAYER_SIZE, OUTPUT_COUNT)
+    output_weights = generate_weight_matrix(HIDDEN_LAYER_SIZE + 1, OUTPUT_COUNT)
 
 
     # targets for each node indexed by target digit
@@ -105,7 +104,7 @@ def main(argv=None):
             input = np.array(input)
             # activation of hidden nodes
             hidden_nodes = input @ hidden_layer_weights
-            hidden_nodes = expit(hidden_nodes)
+            hidden_nodes = np.r_[[1], expit(hidden_nodes)]
             # activation of output nodes 
             outputs = hidden_nodes @ output_weights
             outputs = expit(outputs)
@@ -119,7 +118,7 @@ def main(argv=None):
             output_weights = output_weights + output_weight_deltas
             previous_OWD = output_weight_deltas
             # update weights for hidden nodes
-            hidden_weight_deltas = np.outer((LEARNING_RATE * hidden_errors), input).T
+            hidden_weight_deltas = np.outer((LEARNING_RATE * hidden_errors[1,]), input).T
             hidden_weight_deltas = hidden_weight_deltas + (MOMENTUM * previous_HWD)
             hidden_layer_weights = hidden_layer_weights + hidden_weight_deltas
             previous_HWD = hidden_weight_deltas
