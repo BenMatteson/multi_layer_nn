@@ -27,6 +27,7 @@ def get_dataset_from_file(path):
             tags.append(int(tag))
             input = dataset_file.readline()
         data_set = np.asarray(data_set)
+        tags = np.asarray(tags)
         tagged_set = [tags, data_set]
     return tagged_set
 
@@ -92,6 +93,7 @@ def main(argv=None):
     targets = (np.ones((10,10)) * .1) + (np.identity(OUTPUT_COUNT) * .8)
 
     # initial accuracy
+    print('Epoch 0')
     print(compute_accuracy(training_data, np.array(hidden_layer_weights), np.array(output_weights)))
     print(compute_accuracy(test_data, np.array(hidden_layer_weights), np.array(output_weights)))
 
@@ -99,7 +101,7 @@ def main(argv=None):
     previous_OWD = 0
     previous_HWD = 0
     for epoch in range(1,51):
-        for i, (tag, input) in enumerate(zip(training_data[0], training_data[1])):
+        for tag, input in zip(training_data[0], training_data[1]):
             input = np.array(input)
             # activation of hidden nodes
             hidden_nodes = input @ hidden_layer_weights
@@ -122,9 +124,10 @@ def main(argv=None):
             hidden_layer_weights = hidden_layer_weights + hidden_weight_deltas
             previous_HWD = hidden_weight_deltas
 
+        print('Epoch ' + str(epoch))
         print(compute_accuracy(training_data, np.array(hidden_layer_weights), np.array(output_weights)))
         print(compute_accuracy(test_data, np.array(hidden_layer_weights), np.array(output_weights)))
-        print('Epoch ' + str(epoch))
+        
     
     print('Done')
 

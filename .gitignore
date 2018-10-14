@@ -4,3 +4,5 @@
 .vs/multi-layer-nn/v15/.suo
 .vs/slnx.sqlite
 .vs/VSWorkspaceState.json
+.vs/config/applicationhost.config
+*.json
