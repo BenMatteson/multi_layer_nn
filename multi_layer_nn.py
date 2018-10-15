@@ -72,6 +72,7 @@ def compute_accuracy(dataset, hidden_layer_weights, output_layer_weights):
             correct += 1
     return correct / count
 
+# args - training.csv testing.csv
 def main(argv=None):
     if argv is None:
         argv = sys.argv
@@ -110,7 +111,7 @@ def main(argv=None):
             # determine errors
             target = targets[tag,:]
             output_errors = outputs * (1 - outputs) * (target - outputs)
-            hidden_errors = hidden_nodes * (1 - hidden_nodes) * np.sum((output_weights @ output_errors), axis=0)
+            hidden_errors = hidden_nodes * (1 - hidden_nodes) * (output_weights @ output_errors)
             # update weights for outputs
             output_weight_deltas = np.outer(LEARNING_RATE * output_errors, hidden_nodes).T
             output_weight_deltas = output_weight_deltas + (MOMENTUM * previous_OWD)
