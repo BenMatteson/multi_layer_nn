@@ -11,6 +11,7 @@ MOMENTUM = .9
 
 #sigmoid = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 
+ # load dataset from csv file as array of tags and matrix of data
 def get_dataset_from_file(path):
     with open(path) as dataset_file:
         data_set = []
@@ -20,14 +21,14 @@ def get_dataset_from_file(path):
             # get tag value
             tag, pixels = input.split(',', 1)
             # get inputs as lsit
-            pix_list = pixels.split(',')
+            pixels = pixels.split(',')
             # scale (and convert) values, include bias as first value
-            scaled_list = [1] + [float(x) / 255 for x in pix_list]
+            scaled_list = [1] + [float(x) / 255 for x in pixels]
             data_set.append(scaled_list)
             tags.append(int(tag))
             input = dataset_file.readline()
         data_set = np.asarray(data_set)
-        tags = np.asarray(tags)
+        #tags = np.asarray(tags)
         tagged_set = [tags, data_set]
     return tagged_set
 
@@ -63,11 +64,9 @@ def compute_accuracy(dataset, hidden_layer_weights, output_layer_weights):
     correct = 0
     hidden_layer = np.c_[np.ones(count) , dataset[1] @ hidden_layer_weights]
     #hidden_layer = expit(hidden_layer) # slower, but more correct, does not effect predictions since it preserves reletive order
-
     output = hidden_layer @ output_layer_weights
     #output = expit(output) # slower, but more correct, does not effect predictions since it preserves reletive order
 
-    #results = dataset[1] @ hidden_layer_weights @ output_layer_weights
     for tag, result in zip(dataset[0], output):
         if tag == guess_from_vector(result):
             correct += 1
@@ -76,16 +75,16 @@ def compute_accuracy(dataset, hidden_layer_weights, output_layer_weights):
 def main(argv=None):
     if argv is None:
         argv = sys.argv
-    training_data_path = argv.pop()
     test_data_path = argv.pop()
+    training_data_path = argv.pop()
     training_data = get_dataset_from_file(training_data_path)
     test_data = get_dataset_from_file(test_data_path)
     print('Finished Importing data')
     
     # initialize
-    input_size = len(training_data[1][0])
+    input_size = len(training_data[1][0]) # includes bias unit
     hidden_layer_weights = generate_weight_matrix(input_size, HIDDEN_LAYER_SIZE)
-    output_weights = generate_weight_matrix(HIDDEN_LAYER_SIZE + 1, OUTPUT_COUNT)
+    output_weights = generate_weight_matrix(HIDDEN_LAYER_SIZE + 1, OUTPUT_COUNT) # extra row for bias weights
 
 
     # targets for each node indexed by target digit
@@ -93,39 +92,39 @@ def main(argv=None):
 
     # initial accuracy
     print('Epoch 0')
-    print(compute_accuracy(training_data, np.array(hidden_layer_weights), np.array(output_weights)))
-    print(compute_accuracy(test_data, np.array(hidden_layer_weights), np.array(output_weights)))
+    print(compute_accuracy(training_data, hidden_layer_weights, output_weights))
+    #print(compute_accuracy(test_data, hidden_layer_weights, output_weights))
 
     # begin training
     previous_OWD = 0
     previous_HWD = 0
-    for epoch in range(1,51):
+    for epoch in range(1,11151):
         for tag, input in zip(training_data[0], training_data[1]):
-            input = np.array(input)
+            #input = np.asarray(input)
             # activation of hidden nodes
             hidden_nodes = input @ hidden_layer_weights
-            hidden_nodes = np.r_[[1], expit(hidden_nodes)]
+            hidden_nodes = np.r_[[1], expit(hidden_nodes)] # add bias (and sigmoid)
             # activation of output nodes 
             outputs = hidden_nodes @ output_weights
             outputs = expit(outputs)
             # determine errors
             target = targets[tag,:]
             output_errors = outputs * (1 - outputs) * (target - outputs)
-            hidden_errors = hidden_nodes * (1 - hidden_nodes) * np.sum((output_weights @ output_errors.T), axis=0)
+            hidden_errors = hidden_nodes * (1 - hidden_nodes) * np.sum((output_weights @ output_errors), axis=0)
             # update weights for outputs
             output_weight_deltas = np.outer(LEARNING_RATE * output_errors, hidden_nodes).T
             output_weight_deltas = output_weight_deltas + (MOMENTUM * previous_OWD)
             output_weights = output_weights + output_weight_deltas
             previous_OWD = output_weight_deltas
             # update weights for hidden nodes
-            hidden_weight_deltas = np.outer((LEARNING_RATE * hidden_errors[1,]), input).T
+            hidden_weight_deltas = np.outer((LEARNING_RATE * hidden_errors[1::]), input).T # ignore bias
             hidden_weight_deltas = hidden_weight_deltas + (MOMENTUM * previous_HWD)
             hidden_layer_weights = hidden_layer_weights + hidden_weight_deltas
             previous_HWD = hidden_weight_deltas
 
         print('Epoch ' + str(epoch))
-        print(compute_accuracy(training_data, np.array(hidden_layer_weights), np.array(output_weights)))
-        print(compute_accuracy(test_data, np.array(hidden_layer_weights), np.array(output_weights)))
+        print(compute_accuracy(training_data, hidden_layer_weights, output_weights))
+        #print(compute_accuracy(test_data, hidden_layer_weights, output_weights))
         
     
     print('Done')
