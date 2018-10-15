@@ -107,7 +107,7 @@ def main(argv=None):
         # begin training
         previous_OWD = 0
         previous_HWD = 0
-        for epoch in range(1,50):
+        for epoch in range(1,11):
             for tag, input in zip(training_data[0], training_data[1]):
                 #input = np.asarray(input)
                 # activation of hidden nodes
@@ -138,8 +138,12 @@ def main(argv=None):
             output.flush()
         matrix = [[0 for x in range(10)] for y in range(10)]
         for tag, input in zip(training_data[0], training_data[1]):
-            output = forward_propogate(test_data, hidden_layer_weights, output_weights)
-            guess = guess_from_vector(output)
+            hidden_nodes = input @ hidden_layer_weights
+            hidden_nodes = np.r_[[1], expit(hidden_nodes)] # add bias (and sigmoid)
+            # activation of output nodes 
+            outputs = hidden_nodes @ output_weights
+            outputs = expit(outputs)
+            guess = guess_from_vector(outputs)
             #build y,x so inner list is rows for easy printing
             matrix[tag][guess] += 1
         for row in matrix:
