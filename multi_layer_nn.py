@@ -58,15 +58,19 @@ def guess_from_vector(vector):
             largest_value = val
     return guess
 
+def forward_propogate(dataset, hidden_layer_weights, output_layer_weights):
+    count = len(dataset[0])
+    hidden_layer = np.c_[np.ones(count) , dataset[1] @ hidden_layer_weights]
+    #hidden_layer = expit(hidden_layer) # slower, but arguably more correct, does not effect predictions since it preserves reletive order
+    output = hidden_layer @ output_layer_weights
+    #output = expit(output) # slower, but arguably more correct, does not effect predictions since it preserves reletive order
+    return output
+
 # compute the accuracy of the given perceptrons at predicting the given inputs
 def compute_accuracy(dataset, hidden_layer_weights, output_layer_weights):
     count = len(dataset[0])
     correct = 0
-    hidden_layer = np.c_[np.ones(count) , dataset[1] @ hidden_layer_weights]
-    #hidden_layer = expit(hidden_layer) # slower, but more correct, does not effect predictions since it preserves reletive order
-    output = hidden_layer @ output_layer_weights
-    #output = expit(output) # slower, but more correct, does not effect predictions since it preserves reletive order
-
+    output = forward_propogate(dataset, hidden_layer_weights, output_layer_weights)
     for tag, result in zip(dataset[0], output):
         if tag == guess_from_vector(result):
             correct += 1
@@ -90,43 +94,59 @@ def main(argv=None):
 
     # targets for each node indexed by target digit
     targets = (np.ones((10,10)) * .1) + (np.identity(OUTPUT_COUNT) * .8)
-
-    # initial accuracy
-    print('Epoch 0')
-    print(compute_accuracy(training_data, hidden_layer_weights, output_weights))
-    #print(compute_accuracy(test_data, hidden_layer_weights, output_weights))
-
-    # begin training
-    previous_OWD = 0
-    previous_HWD = 0
-    for epoch in range(1,11151):
-        for tag, input in zip(training_data[0], training_data[1]):
-            #input = np.asarray(input)
-            # activation of hidden nodes
-            hidden_nodes = input @ hidden_layer_weights
-            hidden_nodes = np.r_[[1], expit(hidden_nodes)] # add bias (and sigmoid)
-            # activation of output nodes 
-            outputs = hidden_nodes @ output_weights
-            outputs = expit(outputs)
-            # determine errors
-            target = targets[tag,:]
-            output_errors = outputs * (1 - outputs) * (target - outputs)
-            hidden_errors = hidden_nodes * (1 - hidden_nodes) * (output_weights @ output_errors)
-            # update weights for outputs
-            output_weight_deltas = np.outer(LEARNING_RATE * output_errors, hidden_nodes).T
-            output_weight_deltas = output_weight_deltas + (MOMENTUM * previous_OWD)
-            output_weights = output_weights + output_weight_deltas
-            previous_OWD = output_weight_deltas
-            # update weights for hidden nodes
-            hidden_weight_deltas = np.outer((LEARNING_RATE * hidden_errors[1::]), input).T # ignore bias
-            hidden_weight_deltas = hidden_weight_deltas + (MOMENTUM * previous_HWD)
-            hidden_layer_weights = hidden_layer_weights + hidden_weight_deltas
-            previous_HWD = hidden_weight_deltas
-
-        print('Epoch ' + str(epoch))
-        print(compute_accuracy(training_data, hidden_layer_weights, output_weights))
+    with open('output.txt', 'w') as output:
+        output.write('epoch \ttrain \ttest\n')
+        output.write('0\t' + str(compute_accuracy(training_data, hidden_layer_weights, output_weights)) + ' \t')
+        output.write(str(compute_accuracy(test_data, hidden_layer_weights, output_weights)) + '\n')
+        output.flush()
+        # initial accuracy
+        print('Epoch 0')
+        #print(compute_accuracy(training_data, hidden_layer_weights, output_weights))
         #print(compute_accuracy(test_data, hidden_layer_weights, output_weights))
-        
+
+        # begin training
+        previous_OWD = 0
+        previous_HWD = 0
+        for epoch in range(1,50):
+            for tag, input in zip(training_data[0], training_data[1]):
+                #input = np.asarray(input)
+                # activation of hidden nodes
+                hidden_nodes = input @ hidden_layer_weights
+                hidden_nodes = np.r_[[1], expit(hidden_nodes)] # add bias (and sigmoid)
+                # activation of output nodes 
+                outputs = hidden_nodes @ output_weights
+                outputs = expit(outputs)
+                # determine errors
+                target = targets[tag,:]
+                output_errors = outputs * (1 - outputs) * (target - outputs)
+                hidden_errors = hidden_nodes * (1 - hidden_nodes) * (output_weights @ output_errors)
+                # update weights for outputs
+                output_weight_deltas = np.outer(LEARNING_RATE * output_errors, hidden_nodes).T
+                output_weight_deltas = output_weight_deltas + (MOMENTUM * previous_OWD)
+                output_weights = output_weights + output_weight_deltas
+                previous_OWD = output_weight_deltas
+                # update weights for hidden nodes
+                hidden_weight_deltas = np.outer((LEARNING_RATE * hidden_errors[1::]), input).T # ignore bias
+                hidden_weight_deltas = hidden_weight_deltas + (MOMENTUM * previous_HWD)
+                hidden_layer_weights = hidden_layer_weights + hidden_weight_deltas
+                previous_HWD = hidden_weight_deltas
+            print('Epoch ' + str(epoch))
+            #print(compute_accuracy(training_data, hidden_layer_weights, output_weights))
+            #print(compute_accuracy(test_data, hidden_layer_weights, output_weights))
+            output.write('epoch \ttrain \ttest\n')
+            output.write(str(epoch) + '\t' + str(compute_accuracy(training_data, hidden_layer_weights, output_weights)) + ' \t')
+            output.write(str(compute_accuracy(test_data, hidden_layer_weights, output_weights)) + '\n')
+            output.flush()
+        matrix = [[0 for x in range(10)] for y in range(10)]
+        for tag, input in zip(training_data[0], training_data[1]):
+            output = forward_propogate(test_data, hidden_layer_weights, output_weights)
+            guess = guess_from_vector(output)
+            #build y,x so inner list is rows for easy printing
+            matrix[tag][guess] += 1
+        for row in matrix:
+            for num in row:
+                output.write(str(num) + ' \t')
+            output.write('\n')
     
     print('Done')
 
