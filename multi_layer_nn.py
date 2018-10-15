@@ -132,8 +132,7 @@ def main(argv=None):
                 previous_HWD = hidden_weight_deltas
             print('Epoch ' + str(epoch))
             #print(compute_accuracy(training_data, hidden_layer_weights, output_weights))
-            #print(compute_accuracy(test_data, hidden_layer_weights, output_weights))
-            output.write('epoch \ttrain \ttest\n')
+            #print(compute_accuracy(test_data, hidden_layer_weights, output_weights)))
             output.write(str(epoch) + '\t' + str(compute_accuracy(training_data, hidden_layer_weights, output_weights)) + ' \t')
             output.write(str(compute_accuracy(test_data, hidden_layer_weights, output_weights)) + '\n')
             output.flush()
