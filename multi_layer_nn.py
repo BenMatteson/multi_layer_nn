@@ -4,32 +4,40 @@ import random
 import math
 from scipy.special import expit #sigmoid activation function
 
-HIDDEN_LAYER_SIZE = 20
+HIDDEN_LAYER_SIZE = 100
 OUTPUT_COUNT = 10
 LEARNING_RATE = .01
 MOMENTUM = .9
+TRAINING_FRACT = .25
 
 #sigmoid = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 
  # load dataset from csv file as array of tags and matrix of data
-def get_dataset_from_file(path):
-    with open(path) as dataset_file:
-        data_set = []
-        tags = []
-        input = dataset_file.readline()
-        while input != '':
-            # get tag value
-            tag, pixels = input.split(',', 1)
-            # get inputs as lsit
-            pixels = pixels.split(',')
-            # scale (and convert) values, include bias as first value
-            scaled_list = [1] + [float(x) / 255 for x in pixels]
-            data_set.append(scaled_list)
-            tags.append(int(tag))
-            input = dataset_file.readline()
-        data_set = np.asarray(data_set)
-        tags = np.asarray(tags)
-        tagged_set = [tags, data_set]
+def get_dataset_from_file(path, fraction_to_use = 1):
+    data_set = np.genfromtxt(path, delimiter=',')
+    np.random.shuffle(data_set)
+    tags = np.asarray(data_set[...,0], dtype=int)
+    data_set[...,0] = 1
+    num_to_use = int(len(tags) * fraction_to_use)
+    # original method for importing data, preseved for posterity, used for all runs before experiment 3
+    #with open(path) as dataset_file:
+    #    data_set = []
+    #    tags = []
+    #    input = dataset_file.readline()
+    #    while input != '':
+    #        # get tag value
+    #        tag, pixels = input.split(',', 1)
+    #        # get inputs as lsit
+    #        pixels = pixels.split(',')
+    #        # scale (and convert) values, include bias as first value
+    #        scaled_list = [1] + [float(x) / 255 for x in pixels]
+    #        data_set.append(scaled_list)
+    #        tags.append(int(tag))
+    #        input = dataset_file.readline()
+    #    data_set = np.asarray(data_set)
+    #    tags = np.asarray(tags)
+    #    tagged_set = [tags, data_set]
+    tagged_set = [tags[0:num_to_use], data_set[0:num_to_use]]
     return tagged_set
 
 # generate random weights for a step in the NN, height is inputs, width is nodes
@@ -83,11 +91,21 @@ def main(argv=None):
         argv = sys.argv
     test_data_path = argv.pop()
     training_data_path = argv.pop()
-    training_data = get_dataset_from_file(training_data_path)
+    training_data = get_dataset_from_file(training_data_path, TRAINING_FRACT)
     test_data = get_dataset_from_file(test_data_path)
     print('Finished Importing data')
-    
-    # initialize
+
+    # show sample breakdown to check reasonable balance
+    print('training examples:\n0\t1\t2\t3\t4\t5\t6\t7\t8\t9')
+    num_used = [0 for x in range(10)]
+    for tag in training_data[0]:
+        num_used[tag] += 1
+    text = ''
+    for val in num_used:
+        text += str(val) + '\t'
+    print(text)
+
+    # initialize weight matricies
     input_size = len(training_data[1][0]) # includes bias unit
     hidden_layer_weights = generate_weight_matrix(input_size, HIDDEN_LAYER_SIZE)
     output_weights = generate_weight_matrix(HIDDEN_LAYER_SIZE + 1, OUTPUT_COUNT) # extra row for bias weights
@@ -95,12 +113,12 @@ def main(argv=None):
 
     # targets for each node indexed by target digit
     targets = (np.ones((10,10)) * .1) + (np.identity(OUTPUT_COUNT) * .8)
-    with open('output.txt', 'w') as output:
+    with open('output3.txt', 'w') as output:
+        # lablel columns and give initial accuracy
         output.write('epoch \ttrain \ttest\n')
         output.write('0\t' + str(compute_accuracy(training_data, hidden_layer_weights, output_weights)) + ' \t')
         output.write(str(compute_accuracy(test_data, hidden_layer_weights, output_weights)) + '\n')
         output.flush()
-        # initial accuracy
         print('Epoch 0')
         #print(compute_accuracy(training_data, hidden_layer_weights, output_weights))
         #print(compute_accuracy(test_data, hidden_layer_weights, output_weights))
@@ -131,12 +149,15 @@ def main(argv=None):
                 hidden_weight_deltas = hidden_weight_deltas + (MOMENTUM * previous_HWD)
                 hidden_layer_weights = hidden_layer_weights + hidden_weight_deltas
                 previous_HWD = hidden_weight_deltas
+
+            # record accuracy after each epoch
             print('Epoch ' + str(epoch))
             #print(compute_accuracy(training_data, hidden_layer_weights, output_weights))
             #print(compute_accuracy(test_data, hidden_layer_weights, output_weights)))
             output.write(str(epoch) + '\t' + str(compute_accuracy(training_data, hidden_layer_weights, output_weights)) + ' \t')
             output.write(str(compute_accuracy(test_data, hidden_layer_weights, output_weights)) + '\n')
             output.flush()
+        # record confusion matrix for final values
         matrix = create_confusion_matrix(test_data, hidden_layer_weights, output_weights)
         for row in matrix:
             for num in row:
