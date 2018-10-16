@@ -28,7 +28,7 @@ def get_dataset_from_file(path):
             tags.append(int(tag))
             input = dataset_file.readline()
         data_set = np.asarray(data_set)
-        #tags = np.asarray(tags)
+        tags = np.asarray(tags)
         tagged_set = [tags, data_set]
     return tagged_set
 
@@ -58,22 +58,18 @@ def guess_from_vector(vector):
             largest_value = val
     return guess
 
-def forward_propogate(dataset, hidden_layer_weights, output_layer_weights):
-    count = len(dataset[0])
-    hidden_layer = np.c_[np.ones(count) , dataset[1] @ hidden_layer_weights]
-    #hidden_layer = expit(hidden_layer) # slower, but arguably more correct, does not effect predictions since it preserves reletive order
-    output = hidden_layer @ output_layer_weights
-    #output = expit(output) # slower, but arguably more correct, does not effect predictions since it preserves reletive order
-    return output
-
 # compute the accuracy of the given perceptrons at predicting the given inputs
 def compute_accuracy(dataset, hidden_layer_weights, output_layer_weights):
     count = len(dataset[0])
-    correct = 0
-    output = forward_propogate(dataset, hidden_layer_weights, output_layer_weights)
-    for tag, result in zip(dataset[0], output):
-        if tag == guess_from_vector(result):
-            correct += 1
+    # activation of hidden nodes
+    hidden_nodes = dataset[1] @ hidden_layer_weights
+    bias = np.ones((dataset[1].shape[0],))
+    hidden_nodes = np.c_[bias, expit(hidden_nodes)] # add bias (and sigmoid)
+    # activation of output nodes 
+    outputs = hidden_nodes @ output_layer_weights
+    outputs = expit(outputs)
+    guesses = np.apply_along_axis(guess_from_vector, 1, outputs)
+    correct = np.count_nonzero(guesses == dataset[0])
     return correct / count
 
 # args - training.csv testing.csv
