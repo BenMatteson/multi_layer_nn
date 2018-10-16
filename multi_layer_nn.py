@@ -52,7 +52,7 @@ def guess_from_vector(vector):
  # create a confusion matrix for the nn for the given dataset
 def create_confusion_matrix(dataset, hidden_layer_weights, output_weights):
     matrix = [[0 for x in range(10)] for y in range(10)]
-    for tag, input in zip(training_data[0], training_data[1]):
+    for tag, input in zip(dataset[0], dataset[1]):
         hidden_nodes = input @ hidden_layer_weights
         hidden_nodes = np.r_[[1], expit(hidden_nodes)] # add bias (and sigmoid)
         # activation of output nodes 
