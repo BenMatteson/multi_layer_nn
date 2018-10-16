@@ -32,15 +32,6 @@ def get_dataset_from_file(path):
         tagged_set = [tags, data_set]
     return tagged_set
 
-# compute the accuracy of the given perceptrons at predicting the given inputs
-def compute_accuracy(dataset, perceptrons):
-    count = correct = 0
-    for img in dataset:
-        if img[0] == guess_didgit(perceptrons, img):
-            correct += 1
-        count += 1
-    return correct / count
-
 # generate random weights for a step in the NN, height is inputs, width is nodes
 def generate_weight_matrix(height, width):
     matrix = []
@@ -57,6 +48,20 @@ def guess_from_vector(vector):
             guess = index
             largest_value = val
     return guess
+
+ # create a confusion matrix for the nn for the given dataset
+def create_confusion_matrix(dataset, hidden_layer_weights, output_weights):
+    matrix = [[0 for x in range(10)] for y in range(10)]
+    for tag, input in zip(training_data[0], training_data[1]):
+        hidden_nodes = input @ hidden_layer_weights
+        hidden_nodes = np.r_[[1], expit(hidden_nodes)] # add bias (and sigmoid)
+        # activation of output nodes 
+        outputs = hidden_nodes @ output_weights
+        outputs = expit(outputs)
+        guess = guess_from_vector(outputs)
+        #build y,x so inner list is rows for easy printing
+        matrix[tag][guess] += 1
+    return matrix
 
 # compute the accuracy of the given perceptrons at predicting the given inputs
 def compute_accuracy(dataset, hidden_layer_weights, output_layer_weights):
@@ -132,16 +137,7 @@ def main(argv=None):
             output.write(str(epoch) + '\t' + str(compute_accuracy(training_data, hidden_layer_weights, output_weights)) + ' \t')
             output.write(str(compute_accuracy(test_data, hidden_layer_weights, output_weights)) + '\n')
             output.flush()
-        matrix = [[0 for x in range(10)] for y in range(10)]
-        for tag, input in zip(training_data[0], training_data[1]):
-            hidden_nodes = input @ hidden_layer_weights
-            hidden_nodes = np.r_[[1], expit(hidden_nodes)] # add bias (and sigmoid)
-            # activation of output nodes 
-            outputs = hidden_nodes @ output_weights
-            outputs = expit(outputs)
-            guess = guess_from_vector(outputs)
-            #build y,x so inner list is rows for easy printing
-            matrix[tag][guess] += 1
+        matrix = create_confusion_matrix(test_data, hidden_layer_weights, output_weights)
         for row in matrix:
             for num in row:
                 output.write(str(num) + ' \t')
