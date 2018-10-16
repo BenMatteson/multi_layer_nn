@@ -103,7 +103,7 @@ def main(argv=None):
         # begin training
         previous_OWD = 0
         previous_HWD = 0
-        for epoch in range(1,11):
+        for epoch in range(1,51):
             for tag, input in zip(training_data[0], training_data[1]):
                 #input = np.asarray(input)
                 # activation of hidden nodes
