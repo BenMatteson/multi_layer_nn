@@ -4,11 +4,8 @@ import random
 import math
 from scipy.special import expit #sigmoid activation function
 
-HIDDEN_LAYER_SIZE = 100
 OUTPUT_COUNT = 10
 LEARNING_RATE = .01
-MOMENTUM = .9
-TRAINING_FRACT = 1
 
 #sigmoid = np.vectorize(lambda z: 1 / (1 + np.exp(-z)))
 scale_byte = np.vectorize(lambda x: x/255)
@@ -87,14 +84,17 @@ def compute_accuracy(dataset, hidden_layer_weights, output_layer_weights):
     correct = np.count_nonzero(guesses == dataset[0])
     return correct / count
 
-# args - training.csv testing.csv
+# args - <hidden_layer_size> <momentum> <training_fraction> <training.csv> <testing.csv> <output.txt>
 def main(argv=None):
     if argv is None:
         argv = sys.argv
     output_file = argv.pop()
     test_data_path = argv.pop()
     training_data_path = argv.pop()
-    training_data = get_dataset_from_file(training_data_path, TRAINING_FRACT)
+    training_fract = float(argv.pop())
+    momentum = float(argv.pop())
+    hidden_layer_size = int(argv.pop())
+    training_data = get_dataset_from_file(training_data_path, training_fract)
     test_data = get_dataset_from_file(test_data_path)
     print('Finished Importing data')
 
@@ -110,12 +110,12 @@ def main(argv=None):
 
     # initialize weight matricies
     input_size = len(training_data[1][0]) # includes bias unit
-    hidden_layer_weights = generate_weight_matrix(input_size, HIDDEN_LAYER_SIZE)
-    output_weights = generate_weight_matrix(HIDDEN_LAYER_SIZE + 1, OUTPUT_COUNT) # extra row for bias weights
+    hidden_layer_weights = generate_weight_matrix(input_size, hidden_layer_size)
+    output_weights = generate_weight_matrix(hidden_layer_size + 1, OUTPUT_COUNT) # extra row for bias weights
 
 
     # targets for each node indexed by target digit
-    targets = (np.ones((10,10)) * .1) + (np.identity(OUTPUT_COUNT) * .8)
+    targets = (np.ones((OUTPUT_COUNT,OUTPUT_COUNT)) * .1) + (np.identity(OUTPUT_COUNT) * .8)
     with open(output_file, 'w') as output:
         # lablel columns and give initial accuracy
         output.write('epoch \ttrain \ttest\n')
@@ -144,12 +144,12 @@ def main(argv=None):
                 hidden_errors = hidden_nodes * (1 - hidden_nodes) * (output_weights @ output_errors)
                 # update weights for outputs
                 output_weight_deltas = np.outer(LEARNING_RATE * output_errors, hidden_nodes).T
-                output_weight_deltas = output_weight_deltas + (MOMENTUM * previous_OWD)
+                output_weight_deltas = output_weight_deltas + (momentum * previous_OWD)
                 output_weights = output_weights + output_weight_deltas
                 previous_OWD = output_weight_deltas
                 # update weights for hidden nodes
                 hidden_weight_deltas = np.outer((LEARNING_RATE * hidden_errors[1::]), input).T # ignore bias
-                hidden_weight_deltas = hidden_weight_deltas + (MOMENTUM * previous_HWD)
+                hidden_weight_deltas = hidden_weight_deltas + (momentum * previous_HWD)
                 hidden_layer_weights = hidden_layer_weights + hidden_weight_deltas
                 previous_HWD = hidden_weight_deltas
 
