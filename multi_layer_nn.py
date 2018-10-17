@@ -8,7 +8,7 @@ HIDDEN_LAYER_SIZE = 100
 OUTPUT_COUNT = 10
 LEARNING_RATE = .01
 MOMENTUM = .9
-TRAINING_FRACT = .25
+TRAINING_FRACT = 1
 
 #sigmoid = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
 
@@ -89,6 +89,7 @@ def compute_accuracy(dataset, hidden_layer_weights, output_layer_weights):
 def main(argv=None):
     if argv is None:
         argv = sys.argv
+    output_file = argv.pop()
     test_data_path = argv.pop()
     training_data_path = argv.pop()
     training_data = get_dataset_from_file(training_data_path, TRAINING_FRACT)
@@ -113,7 +114,7 @@ def main(argv=None):
 
     # targets for each node indexed by target digit
     targets = (np.ones((10,10)) * .1) + (np.identity(OUTPUT_COUNT) * .8)
-    with open('output3.txt', 'w') as output:
+    with open(output_file, 'w') as output:
         # lablel columns and give initial accuracy
         output.write('epoch \ttrain \ttest\n')
         output.write('0\t' + str(compute_accuracy(training_data, hidden_layer_weights, output_weights)) + ' \t')
