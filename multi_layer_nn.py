@@ -10,7 +10,8 @@ LEARNING_RATE = .01
 MOMENTUM = .9
 TRAINING_FRACT = 1
 
-#sigmoid = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
+#sigmoid = np.vectorize(lambda z: 1 / (1 + np.exp(-z)))
+scale_byte = np.vectorize(lambda x: x/255)
 
  # load dataset from csv file as array of tags and matrix of data
 def get_dataset_from_file(path, fraction_to_use = 1):
@@ -18,6 +19,7 @@ def get_dataset_from_file(path, fraction_to_use = 1):
     np.random.shuffle(data_set)
     tags = np.asarray(data_set[...,0], dtype=int)
     data_set[...,0] = 1
+    data_set[...,1:] = scale_byte(data_set[...,1:])
     num_to_use = int(len(tags) * fraction_to_use)
     # original method for importing data, preseved for posterity, used for all runs before experiment 3
     #with open(path) as dataset_file:
